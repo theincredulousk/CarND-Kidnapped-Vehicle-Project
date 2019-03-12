@@ -12,7 +12,6 @@
 #include <iostream>
 #include <iterator>
 #include <numeric>
-#include <random>
 #include <string>
 #include <vector>
 
@@ -28,16 +27,16 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   std::normal_distribution<double> dist_x(x, std[0]);
   std::normal_distribution<double> dist_y(y, std[1]);
   std::normal_distribution<double> dist_theta(theta, std[2]);
-  std::default_random_engine RNG;
+
   double x_with_noise{0.0};
   double y_with_noise = {0.0};
   double theta_with_noise = {0.0};
 
   for(int iParticle = 0; iParticle < num_particles; iParticle++)
   {
-      x_with_noise = dist_x(RNG);
-      y_with_noise = dist_y(RNG);
-      theta_with_noise = dist_theta(RNG);
+      x_with_noise = dist_x(_RNG);
+      y_with_noise = dist_y(_RNG);
+      theta_with_noise = dist_theta(_RNG);
 
       Particle p{iParticle, x_with_noise, y_with_noise, theta_with_noise, 1, {}, {}, {}};
 
@@ -52,27 +51,33 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
                                 double velocity, double yaw_rate) {
 
-  std::default_random_engine RNG;
-
   for(auto& particle : particles)
   {
-      particle.x = particle.x 
-        + (velocity / yaw_rate) 
-        * (sin(particle.theta + yaw_rate * delta_t) - sin(particle.theta));
+      if(yaw_rate != 0.0)
+      {
+          particle.x = particle.x 
+            + (velocity / yaw_rate) 
+            * (sin(particle.theta + yaw_rate * delta_t) - sin(particle.theta));
 
-      particle.y = particle.y 
-        + (velocity / yaw_rate) 
-        * (cos(particle.theta) - cos(particle.theta + yaw_rate * delta_t));
+          particle.y = particle.y 
+            + (velocity / yaw_rate) 
+            * (cos(particle.theta) - cos(particle.theta + yaw_rate * delta_t));
 
-      particle.theta = particle.theta + (yaw_rate * delta_t);
+          particle.theta = particle.theta + (yaw_rate * delta_t);
+      } 
+      else
+      {
+          particle.x = particle.x + velocity * delta_t * cos(particle.theta);
+          particle.y = particle.y + velocity * delta_t * sin(particle.theta);
+      }
 
       std::normal_distribution<double> dist_x(particle.x, std_pos[0]);
       std::normal_distribution<double> dist_y(particle.y, std_pos[1]);
       std::normal_distribution<double> dist_theta(particle.theta, std_pos[2]);
 
-      particle.x = dist_x(RNG);
-      particle.y = dist_y(RNG);
-      particle.theta = dist_theta(RNG);
+      particle.x = dist_x(_RNG);
+      particle.y = dist_y(_RNG);
+      particle.theta = dist_theta(_RNG);
   }
 
 }
@@ -176,11 +181,10 @@ void ParticleFilter::resample() {
   //std::cout << "Max weight= " << max_weight << " Sum weight=" << sum_weight << std::endl;
   std::discrete_distribution<int> weight_dist(std::begin(weights), std::end(weights));
   
-  std::default_random_engine RNG;
   int index = 0;
   for(int i = 0; i < num_particles; i++)
   {
-      index = weight_dist(RNG);
+      index = weight_dist(_RNG);
       //std::cout << "Selected index " << index << std::endl;
       resampled_particles.push_back(particles[index]);
   }

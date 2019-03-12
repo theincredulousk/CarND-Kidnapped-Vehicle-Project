@@ -14,6 +14,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <random>
 #include "map.h"
 
 // for portability of M_PI (Vis Studio, MinGW, etc.)
